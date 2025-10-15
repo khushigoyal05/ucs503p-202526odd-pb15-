@@ -1,6 +1,7 @@
-// frontend/SocietyApp.jsx
 import { useState } from "react";
 import "./App.css";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function SocietyApp() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -31,7 +32,7 @@ export default function SocietyApp() {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/add_event", {
+      const response = await fetch(`${API_BASE}/add_event`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, date, desc }),
@@ -74,7 +75,7 @@ export default function SocietyApp() {
   // 🗑️ Delete Event Handler
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`http://localhost:8000/delete_event/${id}`, { method: "DELETE" });
+      const response = await fetch(`${API_BASE}/delete_event/${id}`, { method: "DELETE" });
       if (response.ok) {
         setEvents(events.filter(ev => ev.id !== id));
         alert("Event deleted!");
@@ -168,7 +169,7 @@ export default function SocietyApp() {
                 <div style={{ fontWeight: 500, color: "#2563eb" }}>
                   Predicted Tags:{" "}
                   <span style={{ color: "#1e293b" }}>
-                    {event.tags?.join(", ") || "No Tags Predicted"} {/* Fallback text added */}
+                    {event.tags?.join(", ") || "No Tags Predicted"}
                   </span>
                 </div>
                 {/* Action buttons */}
