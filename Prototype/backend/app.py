@@ -10,7 +10,7 @@ load_dotenv()
 
 # ======== CONFIGURE GEMINI ==========
 # Make sure your API key is valid and has access to Gemini models
-genai.configure(api_key=os.getenv("GEMINI.API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI()
 
