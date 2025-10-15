@@ -1,0 +1,20 @@
+# Node.js (React frontend)
+node_modules/
+dist/
+build/
+.env
+
+# Python (FastAPI backend)
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# VS Code settings (optional)
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db

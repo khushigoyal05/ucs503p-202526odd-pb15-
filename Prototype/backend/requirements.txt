@@ -1,0 +1,21 @@
+# =========================
+# Backend Requirements (Gemini)
+# =========================
+#
+# 1. Create & activate venv
+#    python -m venv venv && venv\Scripts\activate   (Windows)
+#    python3 -m venv venv && source venv/bin/activate  (Mac/Linux)
+#
+# 2. Install dependencies:
+#    pip install -r requirements.txt
+#
+# 3. Run API server:
+#    uvicorn app:app --reload --port 8000
+#
+# =========================
+
+fastapi
+uvicorn
+google-generativeai
+requests
+python-multipart

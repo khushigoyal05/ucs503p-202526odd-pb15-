@@ -1,0 +1,234 @@
+/* Modern Blue & White Theme */
+body, html, #root {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', Arial, sans-serif;
+  background: linear-gradient(120deg, #e0e7ff 0%, #f8fafc 100%);
+  color: #1e293b;
+}
+
+/* Center content with scroll support */
+.center-bg {
+  min-height: 100vh;
+  min-width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: inherit;
+  box-sizing: border-box;
+}
+
+/* Card Styles */
+.login-card,
+.dashboard-card {
+  background: #fff;
+  border-radius: 1.25rem;
+  box-shadow:
+    0 2px 8px 0 rgba(59, 130, 246, 0.06),
+    0 8px 32px 0 rgba(59, 130, 246, 0.10);
+  padding: 2.5rem 2rem;
+  min-width: 340px;
+  max-width: 420px;
+  width: 100%;
+  margin: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+  border: 1.5px solid #e0e7ef;
+  transition: box-shadow 0.18s cubic-bezier(.4,0,.2,1), border 0.18s, transform 0.18s;
+  backdrop-filter: blur(2px);
+}
+
+.login-card:hover,
+.dashboard-card:hover {
+  box-shadow:
+    0 4px 24px 0 rgba(59, 130, 246, 0.13),
+    0 16px 56px 0 rgba(59, 130, 246, 0.10);
+  border: 1.5px solid #3b82f6;
+  transform: translateY(-2px) scale(1.012);
+}
+
+/* Titles */
+.login-title,
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1d4ed8;
+  margin-bottom: 0.7rem;
+  text-align: center;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+/* Buttons */
+.login-btn,
+.dashboard-btn {
+  background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1.5rem;
+  font-size: 1.08rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 
+    background 0.18s cubic-bezier(.4,0,.2,1),
+    box-shadow 0.18s cubic-bezier(.4,0,.2,1),
+    transform 0.18s cubic-bezier(.4,0,.2,1);
+  width: 100%;
+  margin-bottom: 0.7rem;
+  box-shadow: 0 1.5px 6px 0 rgba(59, 130, 246, 0.10);
+  outline: none;
+  border-bottom: 2.5px solid #1e40af;
+}
+
+.login-btn:last-child,
+.dashboard-btn:last-child {
+  margin-bottom: 0;
+}
+
+.login-btn:hover,
+.dashboard-btn:hover,
+.login-btn:focus-visible,
+.dashboard-btn:focus-visible {
+  background: linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%);
+  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.18);
+  transform: translateY(-2px) scale(1.03);
+  border-bottom: 3px solid #1e40af;
+}
+
+/* Input Fields */
+.login-input,
+.dashboard-input,
+textarea.dashboard-input {
+  border: 1.5px solid #e0e7ef;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  transition: border 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s;
+  outline: none;
+  width: 100%;
+  max-width: 100%;
+  color: #1e293b;
+  margin-bottom: 1.2rem;
+  background: #f1f5fe;
+  box-sizing: border-box;
+  box-shadow: 0 1.5px 6px 0 rgba(59, 130, 246, 0.03);
+  resize: vertical;
+}
+
+.login-input:focus,
+.dashboard-input:focus,
+textarea.dashboard-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px #60a5fa33;
+}
+
+/* Tag Buttons (for interests, etc.) */
+.tag-btn {
+  padding: 7px 18px;
+  border-radius: 1.5rem;
+  border: 1.5px solid #3b82f6;
+  background: #e0e7ff;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: #2563eb;
+  transition: background 0.18s, color 0.18s, border 0.18s;
+  outline: none;
+  margin-bottom: 0.5rem;
+  margin-right: 0.5rem;
+  box-shadow: 0 1.5px 6px 0 rgba(59, 130, 246, 0.04);
+}
+
+.tag-btn.selected,
+.tag-btn:active {
+  background: #2563eb;
+  color: #fff;
+  border: 1.5px solid #2563eb;
+}
+
+.tag-btn:hover:not(.selected),
+.tag-btn:focus-visible:not(.selected) {
+  background: #3b82f6;
+  color: #fff;
+  border: 1.5px solid #1d4ed8;
+}
+
+/* Event List Container */
+.event-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-top: 0.5rem;
+}
+
+/* Event Cards */
+.event-card {
+  background: #f8fafc;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
+  padding: 1.2rem 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-left: 4px solid #3b82f6;
+  transition: box-shadow 0.18s, transform 0.18s, border 0.18s;
+}
+
+.event-card:last-child {
+  margin-bottom: 0;
+}
+
+.event-card:hover {
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.13);
+  transform: scale(1.018);
+  border-left: 6px solid #1d4ed8;
+}
+
+/* For event card actions (edit/delete) */
+.event-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Make sure event title, date, desc wrap properly */
+.event-title,
+.event-date,
+.event-desc {
+  word-break: break-word;
+  white-space: pre-line;
+}
+
+/* Announcement Box */
+.announcement-box {
+  background: #e0e7ff;
+  border-radius: 0.7rem;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+  border: 1.5px solid #3b82f6;
+  font-size: 1rem;
+  box-shadow: 0 1.5px 6px 0 rgba(59, 130, 246, 0.04);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .login-card, .dashboard-card {
+    padding: 1.2rem 0.7rem;
+    min-width: unset;
+    max-width: 98vw;
+  }
+  .event-card {
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 1rem 0.7rem;
+  }
+}
