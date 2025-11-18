@@ -10,6 +10,8 @@ load_dotenv()
 
 # ======== CONFIGURE GEMINI ==========
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+print("Gemini Key starts with:", os.getenv("GEMINI_API_KEY")[:8])
+
 
 # ======== CONFIGURE SUPABASE =========
 from supabase import create_client
