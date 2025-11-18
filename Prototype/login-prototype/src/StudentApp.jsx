@@ -24,7 +24,9 @@ export default function StudentApp() {
   const fetchEvents = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/get_events");
+      const API_BASE = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${API_BASE}/get_events`);
+
       const data = await response.json();
       setEvents(data.events || []);
     } catch (err) {

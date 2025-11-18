@@ -1,16 +1,30 @@
 import google.generativeai as genai
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Dict, Any
+from typing import List
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # ======== CONFIGURE GEMINI ==========
-# Make sure your API key is valid and has access to Gemini models
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# ======== CONFIGURE SUPABASE =========
+from supabase import create_client
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# 🔥 DEBUG PRINT — THIS MUST SHOW IN RENDER LOGS
+print("Connected to Supabase:", SUPABASE_URL)
+print("Supabase Key Starts With:", SUPABASE_KEY[:10] if SUPABASE_KEY else "NO KEY LOADED")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("Missing SUPABASE_URL or SUPABASE_KEY in .env")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
 
@@ -30,93 +44,111 @@ TAGS = [
     "music", "photography", "robotics", "social service", "sports", "tech", "theatre"
 ]
 
-EVENTS: List[Dict[str, Any]] = []
-
 class EventBase(BaseModel):
     title: str
     date: str
     desc: str
 
+# ======== TAG PREDICTION LOGIC =========
 def predict_tags_logic(description: str) -> List[str]:
     prompt = f"""
-You are a tag classifier for college events.
-Event description: "{description}"
+    You are a tag classifier for college events.
+    Event description: "{description}"
 
-Choose ONLY relevant tags from this fixed list:
-{", ".join(TAGS)}
+    Choose ONLY relevant tags from this list:
+    {", ".join(TAGS)}
 
-Rules:
-- Output must be a comma-separated list of tags from the list above.
-- Do NOT include any explanations, prefixes, or suffixes, only the comma-separated list.
-- Use exact spellings and casing.
-- If no clear tags match, default to 'cultural'.
+    Output must ONLY be tags, comma-separated.
+    """
 
-Example Input: A hackathon on AI and robotics
-Example Output: AI/ML, robotics, tech
-"""
-
-    model_name = "models/gemini-2.5-flash"
     try:
-        model = genai.GenerativeModel(model_name)
+        model = genai.GenerativeModel("models/gemini-2.5-flash")
         response = model.generate_content(prompt)
-        text_out = response.text.strip()
-        print("Gemini raw response:", repr(text_out))  # Debug log
+        out = response.text.strip()
 
-        # Remove markdown/code formatting if present
-        text_out = text_out.replace('`', '').replace('json', '').strip()
-        # Only take the first line if multiple lines
-        text_out = text_out.split('\n')[0]
-        raw_tags = [t.strip() for t in text_out.split(",") if t.strip()]
-        tags = [t for t in raw_tags if t in TAGS]
+        out = out.replace("`", "")
+        out = out.split("\n")[0]
+        raw = [t.strip() for t in out.split(",") if t.strip()]
+        tags = [t for t in raw if t in TAGS]
 
-        if not tags:
-            print(f"⚠️ Tag prediction failed for description. Falling back.")
-            if any(k in description.lower() for k in ['ai', 'code', 'robot', 'cyber', 'tech', 'electronics']):
-                tags = ["tech"]
-            else:
-                tags = ["cultural"]
-        return tags
+        return tags or ["cultural"]
 
-    except Exception as e:
-        print(f"❌ Error with model {model_name}:", e)
+    except Exception:
         return ["cultural"]
 
+# ======== API ENDPOINTS ==========
+
 @app.post("/predict_tags")
-def predict_tags_endpoint(event: EventBase):
-    tags = predict_tags_logic(event.desc)
-    return {"tags": tags}
+def predict_tags(event: EventBase):
+    return {"tags": predict_tags_logic(event.desc)}
 
 @app.post("/add_event")
 def add_event(event: EventBase):
     tags = predict_tags_logic(event.desc)
-    new_id = EVENTS[-1]["id"] + 1 if EVENTS else 1
-    new_event = {
-        "id": new_id,
+
+    data = {
         "title": event.title,
-        "date": event.date,
-        "desc": event.desc,
-        "tags": tags,
+        "description": event.desc,
+        "event_date": event.date,
+        "tags": tags
     }
-    EVENTS.append(new_event)
-    return new_event
+
+    res = supabase.table("events").insert(data).select("*").execute()
+
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Supabase insertion failed")
+
+    row = res.data[0]
+
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "date": row["event_date"],
+        "desc": row["description"],
+        "tags": row["tags"]
+    }
 
 @app.get("/get_events")
 def get_events():
-    return {"events": EVENTS}
+    res = supabase.table("events").select("*").order("id").execute()
+
+    events = []
+    for r in res.data:
+        events.append({
+            "id": r["id"],
+            "title": r["title"],
+            "date": r["event_date"],
+            "desc": r["description"],
+            "tags": r["tags"]
+        })
+
+    return {"events": events}
 
 @app.delete("/delete_event/{event_id}")
 def delete_event(event_id: int):
-    global EVENTS
-    EVENTS = [e for e in EVENTS if e["id"] != event_id]
+    supabase.table("events").delete().eq("id", event_id).execute()
     return {"message": f"Event {event_id} deleted"}
 
 @app.put("/edit_event/{event_id}")
 def edit_event(event_id: int, updated: EventBase):
-    for e in EVENTS:
-        if e["id"] == event_id:
-            e["title"] = updated.title
-            e["date"] = updated.date
-            e["desc"] = updated.desc
-            e["tags"] = predict_tags_logic(updated.desc)
-            return e
-    return {"error": "Event not found"}
+    tags = predict_tags_logic(updated.desc)
+
+    res = supabase.table("events").update({
+        "title": updated.title,
+        "description": updated.desc,
+        "event_date": updated.date,
+        "tags": tags
+    }).eq("id", event_id).select("*").execute()
+
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    r = res.data[0]
+
+    return {
+        "id": r["id"],
+        "title": r["title"],
+        "date": r["event_date"],
+        "desc": r["description"],
+        "tags": r["tags"]
+    }

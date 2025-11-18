@@ -20,3 +20,4 @@ google-generativeai
 requests
 python-multipart
 python-dotenv
+supabase
