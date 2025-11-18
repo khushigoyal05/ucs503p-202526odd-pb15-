@@ -93,7 +93,8 @@ def add_event(event: EventBase):
         "tags": tags
     }
 
-    res = supabase.table("events").insert(data).select("*").execute()
+    # Insert into Supabase (NEW V2 SYNTAX)
+    res = supabase.table("events").insert(data).execute()
 
     if not res.data:
         raise HTTPException(status_code=500, detail="Supabase insertion failed")
