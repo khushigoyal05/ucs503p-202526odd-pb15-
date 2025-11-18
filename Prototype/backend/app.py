@@ -54,28 +54,48 @@ class EventBase(BaseModel):
 # ======== TAG PREDICTION LOGIC =========
 def predict_tags_logic(description: str) -> List[str]:
     prompt = f"""
-    You are a tag classifier for college events.
-    Event description: "{description}"
+You are a tag classifier for college events.
+Event description: "{description}"
 
-    Choose ONLY relevant tags from this list:
-    {", ".join(TAGS)}
+Choose ONLY relevant tags from this fixed list:
+{", ".join(TAGS)}
 
-    Output must ONLY be tags, comma-separated.
-    """
+Rules:
+- Output must be a comma-separated list of tags.
+- Use exact spellings.
+- If unsure, return 'cultural'.
+"""
+
+    model_name = "models/gemini-2.0-flash"   # UPDATED MODEL NAME
 
     try:
-        model = genai.GenerativeModel("models/gemini-2.5-flash")
+        model = genai.GenerativeModel(model_name)
         response = model.generate_content(prompt)
-        out = response.text.strip()
 
-        out = out.replace("`", "")
-        out = out.split("\n")[0]
-        raw = [t.strip() for t in out.split(",") if t.strip()]
-        tags = [t for t in raw if t in TAGS]
+        print("=== GEMINI RAW RESPONSE ===")
+        print(response)
+        print("=== GEMINI TEXT ===")
+        print(response.text if response else "NO RESPONSE")
 
-        return tags or ["cultural"]
+        if not response or not response.text:
+            print("⚠️ Empty response from Gemini.")
+            return ["cultural"]
 
-    except Exception:
+        text_out = response.text.strip()
+        text_out = text_out.replace("`", "")
+        text_out = text_out.split("\n")[0]
+
+        raw_tags = [t.strip() for t in text_out.split(",") if t.strip()]
+        tags = [t for t in raw_tags if t in TAGS]
+
+        if not tags:
+            print("⚠️ Gemini returned no valid tags.")
+            return ["cultural"]
+
+        return tags
+
+    except Exception as e:
+        print("❌ GEMINI ERROR:", e)
         return ["cultural"]
 
 # ======== API ENDPOINTS ==========
