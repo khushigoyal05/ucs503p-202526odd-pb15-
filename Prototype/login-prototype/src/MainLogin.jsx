@@ -9,6 +9,7 @@ export default function MainLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student"); // default role
+  const [loading, setLoading] = useState(false);
 
   // SIGNUP HANDLER
   const handleSignup = async () => {
@@ -18,70 +19,101 @@ export default function MainLogin() {
       return;
     }
 
-    // Supabase signup
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    // Insert user role into profiles table
-    const { error: profileError } = await supabase.from("profiles").insert([
-      {
+    setLoading(true);
+    try {
+      // Supabase signup
+      const { error: signError } = await supabase.auth.signUp({
         email,
-        role,
-      },
-    ]);
+        password,
+      });
 
-    if (profileError) {
-      alert(profileError.message);
-      return;
+      if (signError) {
+        alert(signError.message);
+        return;
+      }
+
+      // Insert user role into profiles table
+      const { error: profileError } = await supabase.from("profiles").insert([
+        {
+          email: email.toLowerCase(),
+          role,
+        },
+      ]);
+
+      if (profileError) {
+        alert(profileError.message);
+        return;
+      }
+
+      alert(
+        "Signup successful! Please check your Thapar email to verify your account."
+      );
+    } catch (err) {
+      console.error("Signup error:", err);
+      alert("Signup failed. Check console for details.");
+    } finally {
+      setLoading(false);
     }
-
-    alert("Signup successful! Please check your Thapar email to verify your account.");
   };
 
   // LOGIN HANDLER
   const handleLogin = async () => {
-    // login with Supabase Auth
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    setLoading(true);
+    try {
+      // Sign in
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
+      if (loginError) {
+        alert(loginError.message);
+        return;
+      }
 
-    // Fetch user role from profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("email", email)
-      .single();
+      // Grab the stored profile role from DB (use lowercase email for safety)
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("email", email.toLowerCase())
+        .single();
 
-    if (profileError || !profile) {
-      alert("User role not found. Contact support.");
-      return;
-    }
+      if (profileError || !profile) {
+        // If profile missing, sign out and show error
+        await supabase.auth.signOut();
+        alert("User profile not found. Please sign up first or contact support.");
+        return;
+      }
 
-    // Redirect based on role
-    if (profile.role === "society") {
-      navigate("/society");
-    } else {
-      navigate("/student");
+      const storedRole = (profile.role || "").toLowerCase();
+      const selectedRole = (role || "").toLowerCase();
+
+      // Enforce role match: if mismatch, sign out and show error
+      if (storedRole !== selectedRole) {
+        await supabase.auth.signOut();
+        alert(
+          `Role mismatch: your account is registered as "${storedRole}". Please log in with the correct role.`
+        );
+        return;
+      }
+
+      // All good — redirect based on role
+      if (storedRole === "society") {
+        navigate("/society");
+      } else {
+        navigate("/student");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Login failed. Check console for details.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="center-bg">
       <div className="login-card">
-
         <h2 className="login-title">Welcome to the Club Portal</h2>
 
         <input
@@ -108,11 +140,19 @@ export default function MainLogin() {
           <option value="society">Society Admin</option>
         </select>
 
-        <button className="login-btn" onClick={handleSignup}>
+        <button
+          className="login-btn"
+          onClick={handleSignup}
+          disabled={loading}
+        >
           ✨ Sign Up
         </button>
 
-        <button className="login-btn" onClick={handleLogin}>
+        <button
+          className="login-btn"
+          onClick={handleLogin}
+          disabled={loading}
+        >
           🔐 Login
         </button>
       </div>
