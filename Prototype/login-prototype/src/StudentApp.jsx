@@ -15,20 +15,17 @@ export default function StudentApp() {
     "music", "photography", "robotics", "social service", "sports", "tech", "theatre"
   ];
 
-  // LOGOUT FUNCTION
+  // LOGOUT
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";
   };
 
-  // Fetch logged-in user
+  // Fetch logged user
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        window.location.href = "/";
-      } else {
-        setUser(data.session.user);
-      }
+      if (!data.session) window.location.href = "/";
+      else setUser(data.session.user);
     });
   }, []);
 
@@ -49,28 +46,30 @@ export default function StudentApp() {
     fetchEvents();
   }, []);
 
-  // Select interests
   const toggleInterest = (tag) => {
-    if (interests.includes(tag)) {
+    if (interests.includes(tag))
       setInterests(interests.filter((i) => i !== tag));
-    } else {
+    else
       setInterests([...interests, tag]);
-    }
   };
 
   const filteredEvents = events.filter((event) =>
     event.tags.some((tag) => interests.includes(tag))
   );
 
-  if (!user) {
-    return <p style={{ textAlign: "center", marginTop: "2rem" }}>Loading...</p>;
-  }
+  if (!user) return <p style={{ textAlign: "center", marginTop: "2rem" }}>Loading...</p>;
 
   return (
     <div className="center-bg">
+
+      {/* LOGOUT BUTTON IN TOP-RIGHT */}
+      <button className="logout-btn" onClick={handleLogout}>
+        🚪 Logout
+      </button>
+
       <div className="dashboard-card">
 
-        <div className="profile-row" style={{ justifyContent: "space-between" }}>
+        <div className="profile-row">
           <div className="profile-avatar">
             <span className="profile-icon">👤</span>
           </div>
@@ -79,14 +78,6 @@ export default function StudentApp() {
             <h1 className="dashboard-title">Welcome!</h1>
             <p className="dashboard-email">{user.email}</p>
           </div>
-
-          <button
-            className="dashboard-btn"
-            style={{ background: "#ef4444", height: "40px" }}
-            onClick={handleLogout}
-          >
-            🚪 Logout
-          </button>
         </div>
 
         <h2 className="events-title">Select Your Interests</h2>
@@ -107,9 +98,9 @@ export default function StudentApp() {
         {isLoading ? (
           <p>Loading events...</p>
         ) : interests.length === 0 ? (
-          <p>Please select at least one interest.</p>
+          <p>Please select interests.</p>
         ) : filteredEvents.length === 0 ? (
-          <p>No matching events found.</p>
+          <p>No events match your interests.</p>
         ) : (
           <div className="events-list">
             {filteredEvents.map((event) => {
@@ -122,7 +113,7 @@ export default function StudentApp() {
                       <h3 className="event-title">{event.title}</h3>
                       <p className="event-date">{event.date}</p>
                       <p className="event-desc">{event.desc}</p>
-                      <p><b>All Tags:</b> {event.tags?.join(", ")}</p>
+                      <p><b>Tags:</b> {event.tags?.join(", ")}</p>
                       <p style={{ color: "#2563eb", fontWeight: 600 }}>
                         Matched Interests: {matched.join(", ")}
                       </p>

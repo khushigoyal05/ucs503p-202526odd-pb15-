@@ -15,24 +15,21 @@ export default function SocietyApp() {
   const [announcements, setAnnouncements] = useState([]);
   const [announcementText, setAnnouncementText] = useState("");
 
-  // LOGOUT FUNCTION
+  // LOGOUT
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";
   };
 
-  // Protect route & fetch logged-in user
+  // Protect route
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        window.location.href = "/";
-      } else {
-        setUser(data.session.user);
-      }
+      if (!data.session) window.location.href = "/";
+      else setUser(data.session.user);
     });
   }, []);
 
-  // Load events
+  // Fetch events
   const fetchEvents = async () => {
     try {
       const res = await fetch(`${API_BASE}/get_events`);
@@ -52,27 +49,25 @@ export default function SocietyApp() {
     e.preventDefault();
 
     if (!title || !date || !desc) {
-      alert("Fill all fields!");
+      alert("Fill all event details!");
       return;
     }
 
     try {
-      const response = await fetch(`${API_BASE}/add_event`, {
+      const res = await fetch(`${API_BASE}/add_event`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, date, desc }),
       });
 
-      if (!response.ok) {
+      if (!res.ok) {
         alert("Error adding event");
         return;
       }
 
-      const newEvent = await response.json();
+      const newEvent = await res.json();
       setEvents([...events, newEvent]);
-
       alert("Event added with AI tags!");
-
       setTitle("");
       setDate("");
       setDesc("");
@@ -91,35 +86,34 @@ export default function SocietyApp() {
       if (res.ok) {
         setEvents(events.filter((ev) => ev.id !== id));
         alert("Event deleted!");
-      } else {
-        alert("Failed to delete event.");
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Announcements (local only)
+  // Announcements (local)
   const handleAddAnnouncement = (e) => {
     e.preventDefault();
     if (!announcementText) return;
 
-    setAnnouncements([
-      ...announcements,
-      { id: Date.now(), text: announcementText },
-    ]);
+    setAnnouncements([...announcements, { id: Date.now(), text: announcementText }]);
     setAnnouncementText("");
   };
 
-  if (!user) {
-    return <p style={{ textAlign: "center", marginTop: "2rem" }}>Loading...</p>;
-  }
+  if (!user) return <p style={{ textAlign: "center", marginTop: "2rem" }}>Loading...</p>;
 
   return (
     <div className="center-bg" style={{ alignItems: "flex-start" }}>
+
+      {/* TOP-RIGHT LOGOUT BUTTON */}
+      <button className="logout-btn" onClick={handleLogout}>
+        🚪 Logout
+      </button>
+
       <div className="dashboard-card" style={{ width: "100%", maxWidth: 600 }}>
 
-        <div className="profile-row" style={{ justifyContent: "space-between" }}>
+        <div className="profile-row">
           <div className="profile-avatar">
             <span className="profile-icon">🏫</span>
           </div>
@@ -128,52 +122,43 @@ export default function SocietyApp() {
             <h1 className="dashboard-title">Society Admin Dashboard</h1>
             <p className="dashboard-email">{user.email}</p>
           </div>
-
-          <button
-            className="dashboard-btn"
-            style={{ background: "#ef4444" }}
-            onClick={handleLogout}
-          >
-            🚪 Logout
-          </button>
         </div>
 
         <h2 className="events-title">Create New Event</h2>
         <form onSubmit={handleAddEvent}>
           <input
             type="text"
-            placeholder="Event Title"
             className="dashboard-input"
+            placeholder="Event Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+
           <input
             type="date"
             className="dashboard-input"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
+
           <textarea
-            placeholder="Event Description"
             className="dashboard-input"
+            placeholder="Event Description"
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
           ></textarea>
 
-          <button className="dashboard-btn" type="submit">
-            ➕ Add Event
-          </button>
+          <button className="dashboard-btn">➕ Add Event</button>
         </form>
 
         <h2 className="events-title">Your Events</h2>
+
         {events.map((event) => (
           <div key={event.id} className="event-card">
             <div className="event-title">{event.title}</div>
             <div className="event-date">{event.date}</div>
             <div className="event-desc">{event.desc}</div>
-            <div style={{ fontWeight: 500 }}>
-              Tags: {event.tags?.join(", ")}
-            </div>
+            <div>Tags: {event.tags?.join(", ")}</div>
 
             <button
               className="dashboard-btn"
@@ -189,7 +174,7 @@ export default function SocietyApp() {
         <form onSubmit={handleAddAnnouncement}>
           <textarea
             className="dashboard-input"
-            placeholder="New announcement"
+            placeholder="Type announcement…"
             value={announcementText}
             onChange={(e) => setAnnouncementText(e.target.value)}
           ></textarea>
@@ -199,7 +184,7 @@ export default function SocietyApp() {
 
         {announcements.length > 0 && (
           <div>
-            <h3 style={{ marginTop: "1rem" }}>Announcements</h3>
+            <h3>Announcements</h3>
             {announcements.map((a) => (
               <div key={a.id} className="announcement-box">
                 {a.text}
@@ -207,6 +192,7 @@ export default function SocietyApp() {
             ))}
           </div>
         )}
+
       </div>
     </div>
   );
