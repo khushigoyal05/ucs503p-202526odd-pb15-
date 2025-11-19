@@ -112,6 +112,10 @@ export default function SocietyApp() {
       </button>
 
       <div className="dashboard-card" style={{ width: "100%", maxWidth: 600 }}>
+        <button className="logout-btn" onClick={handleLogout}>
+  🚪 Logout
+</button>
+
 
         <div className="profile-row">
           <div className="profile-avatar">

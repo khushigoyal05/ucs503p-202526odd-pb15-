@@ -68,6 +68,10 @@ export default function StudentApp() {
       </button>
 
       <div className="dashboard-card">
+        <button className="logout-btn" onClick={handleLogout}>
+  🚪 Logout
+</button>
+
 
         <div className="profile-row">
           <div className="profile-avatar">

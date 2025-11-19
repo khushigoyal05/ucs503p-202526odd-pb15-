@@ -60,18 +60,18 @@ body, html, #root {
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;     /* centers the text */
-  gap: 6px;                    /* space between icon and text */
-  position: absolute;          /* place in corner */
-  top: 20px;
-  right: 20px;
+  justify-content: center;
+  gap: 6px;
+  position: absolute;      /* stays absolute */
+  top: 15px;               /* adjusts within card */
+  right: 15px;             /* corner of card */
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   transition: 0.2s ease;
 }
 
 .logout-btn:hover {
   background: #dc2626;
-  scale: 1.03;
+  transform: scale(1.03);
 }
 
 
