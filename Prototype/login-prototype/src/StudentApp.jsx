@@ -1,57 +1,55 @@
-import { useState, useEffect } from "react";
+// frontend/StudentApp.jsx
+import { useEffect, useState } from "react";
+import { supabase } from "./supabaseClient";
 import "./App.css";
 
 export default function StudentApp() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Student interests
+  const [user, setUser] = useState(null);
   const [interests, setInterests] = useState([]);
-
-  // Events fetched from backend
   const [events, setEvents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Tag list
   const TAGS = [
     "AI/ML", "art", "coding", "cultural", "cybersecurity", "dance", "design", "drama",
     "electronics", "entrepreneurship", "finance", "gaming", "literature", "marketing",
     "music", "photography", "robotics", "social service", "sports", "tech", "theatre"
   ];
 
+  // LOGOUT FUNCTION
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+  // Fetch logged-in user
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        window.location.href = "/";
+      } else {
+        setUser(data.session.user);
+      }
+    });
+  }, []);
+
   // Fetch events from backend
   const fetchEvents = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("https://societyconnect.onrender.com/get_events");
+      const response = await fetch(import.meta.env.VITE_API_BASE_URL + "/get_events");
       const data = await response.json();
       setEvents(data.events || []);
     } catch (err) {
       console.error("Error fetching events:", err);
-      setEvents([]);
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   };
 
-  // Fetch on login/load
   useEffect(() => {
-    if (loggedIn) {
-      fetchEvents();
-    }
-  }, [loggedIn]);
+    fetchEvents();
+  }, []);
 
-  // Login handler
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    if (email) {
-      setLoggedIn(true);
-    } else {
-      alert("Please enter your college email!");
-    }
-  };
-
-  // Toggle interest
+  // Select interests
   const toggleInterest = (tag) => {
     if (interests.includes(tag)) {
       setInterests(interests.filter((i) => i !== tag));
@@ -60,44 +58,37 @@ export default function StudentApp() {
     }
   };
 
-  // Filter events based on interests
   const filteredEvents = events.filter((event) =>
     event.tags.some((tag) => interests.includes(tag))
   );
 
-  if (!loggedIn) {
-    return (
-      <div className="center-bg">
-        <form onSubmit={handleLogin} className="login-card">
-          <h2 className="login-title">Student Login</h2>
-          <input
-            type="email"
-            placeholder="College Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="login-input"
-            required
-          />
-          <button type="submit" className="login-btn">Login</button>
-        </form>
-      </div>
-    );
+  if (!user) {
+    return <p style={{ textAlign: "center", marginTop: "2rem" }}>Loading...</p>;
   }
 
   return (
     <div className="center-bg">
       <div className="dashboard-card">
-        <div className="profile-row">
+
+        <div className="profile-row" style={{ justifyContent: "space-between" }}>
           <div className="profile-avatar">
-            <span role="img" aria-label="profile" className="profile-icon">👤</span>
+            <span className="profile-icon">👤</span>
           </div>
+
           <div>
             <h1 className="dashboard-title">Welcome!</h1>
-            <p className="dashboard-email">{email}</p>
+            <p className="dashboard-email">{user.email}</p>
           </div>
+
+          <button
+            className="dashboard-btn"
+            style={{ background: "#ef4444", height: "40px" }}
+            onClick={handleLogout}
+          >
+            🚪 Logout
+          </button>
         </div>
 
-        {/* Interests */}
         <h2 className="events-title">Select Your Interests</h2>
         <div className="tags-grid">
           {TAGS.map((tag) => (
@@ -111,24 +102,14 @@ export default function StudentApp() {
           ))}
         </div>
 
-        {/* Refresh Events */}
-        <button
-          className="dashboard-btn"
-          onClick={fetchEvents}
-          style={{ marginTop: "1rem", marginBottom: "1rem" }}
-        >
-          🔄 Refresh Events
-        </button>
-
-        {/* Recommended Events */}
         <h2 className="events-title">Recommended Events</h2>
 
         {isLoading ? (
           <p>Loading events...</p>
         ) : interests.length === 0 ? (
-          <p>Please select at least one interest to see recommended events.</p>
+          <p>Please select at least one interest.</p>
         ) : filteredEvents.length === 0 ? (
-          <p>No events match your selected interests right now.</p>
+          <p>No matching events found.</p>
         ) : (
           <div className="events-list">
             {filteredEvents.map((event) => {
@@ -141,7 +122,7 @@ export default function StudentApp() {
                       <h3 className="event-title">{event.title}</h3>
                       <p className="event-date">{event.date}</p>
                       <p className="event-desc">{event.desc}</p>
-                      <p><b>All Tags:</b> {event.tags?.join(", ") || "N/A"}</p>
+                      <p><b>All Tags:</b> {event.tags?.join(", ")}</p>
                       <p style={{ color: "#2563eb", fontWeight: 600 }}>
                         Matched Interests: {matched.join(", ")}
                       </p>
@@ -153,6 +134,7 @@ export default function StudentApp() {
             })}
           </div>
         )}
+
       </div>
     </div>
   );

@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "./supabaseClient";
 import "./App.css";
 
-const API_BASE = "https://societyconnect.onrender.com";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function SocietyApp() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [email, setEmail] = useState("");
-
+  const [user, setUser] = useState(null);
   const [events, setEvents] = useState([]);
+
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [desc, setDesc] = useState("");
@@ -15,39 +15,44 @@ export default function SocietyApp() {
   const [announcements, setAnnouncements] = useState([]);
   const [announcementText, setAnnouncementText] = useState("");
 
-  // Fetch events from backend
+  // LOGOUT FUNCTION
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+  // Protect route & fetch logged-in user
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        window.location.href = "/";
+      } else {
+        setUser(data.session.user);
+      }
+    });
+  }, []);
+
+  // Load events
   const fetchEvents = async () => {
     try {
-      const response = await fetch(`${API_BASE}/get_events`);
-      const data = await response.json();
+      const res = await fetch(`${API_BASE}/get_events`);
+      const data = await res.json();
       setEvents(data.events || []);
     } catch (err) {
       console.error("Error fetching events:", err);
     }
   };
 
-  // Run fetch after login
   useEffect(() => {
-    if (loggedIn) {
-      fetchEvents();
-    }
-  }, [loggedIn]);
+    fetchEvents();
+  }, []);
 
-  // Login handler
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (email) {
-      setLoggedIn(true);
-    } else {
-      alert("Enter society email!");
-    }
-  };
-
-  // Add new event
+  // Add event
   const handleAddEvent = async (e) => {
     e.preventDefault();
+
     if (!title || !date || !desc) {
-      alert("Fill all event details!");
+      alert("Fill all fields!");
       return;
     }
 
@@ -59,63 +64,46 @@ export default function SocietyApp() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({
-          message: "Unknown server error",
-        }));
-        throw new Error(`Failed to add event: ${errorData.message}`);
+        alert("Error adding event");
+        return;
       }
 
       const newEvent = await response.json();
-
-      alert("Event Added! Predicted Tags: " + newEvent.tags.join(", "));
-
-      // Add into state
       setEvents([...events, newEvent]);
 
-      // Reset form
+      alert("Event added with AI tags!");
+
       setTitle("");
       setDate("");
       setDesc("");
     } catch (err) {
-      console.error("Error adding event:", err.message);
-      alert("Could not add event. Check backend logs.\n" + err.message);
+      console.error(err);
     }
   };
 
   // Delete event
-  const handleDelete = async (eventId) => {
+  const handleDelete = async (id) => {
     try {
-      const response = await fetch(`${API_BASE}/delete_event/${eventId}`, {
+      const res = await fetch(`${API_BASE}/delete_event/${id}`, {
         method: "DELETE",
       });
 
-      if (!response.ok) {
-        alert("Failed to delete from server.");
-        return;
+      if (res.ok) {
+        setEvents(events.filter((ev) => ev.id !== id));
+        alert("Event deleted!");
+      } else {
+        alert("Failed to delete event.");
       }
-
-      // Remove from frontend state
-      setEvents(events.filter((ev) => ev.id !== eventId));
-
-      alert("Event deleted!");
-
     } catch (err) {
-      console.error("Error deleting event:", err);
+      console.error(err);
     }
   };
 
-  // Edit event (not fully implemented)
-  const handleEdit = (event) => {
-    alert(`Edit feature coming soon.\nEditing event: ${event.title}`);
-  };
-
-  // Add announcement (local only)
+  // Announcements (local only)
   const handleAddAnnouncement = (e) => {
     e.preventDefault();
-    if (!announcementText) {
-      alert("Announcement cannot be empty!");
-      return;
-    }
+    if (!announcementText) return;
+
     setAnnouncements([
       ...announcements,
       { id: Date.now(), text: announcementText },
@@ -123,121 +111,95 @@ export default function SocietyApp() {
     setAnnouncementText("");
   };
 
-  if (!loggedIn) {
-    return (
-      <div className="center-bg">
-        <form onSubmit={handleLogin} className="login-card">
-          <h2 className="login-title">Society Admin Login</h2>
-          <input
-            type="email"
-            placeholder="Society Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="login-input"
-            required
-          />
-          <button type="submit" className="login-btn">Login</button>
-        </form>
-      </div>
-    );
+  if (!user) {
+    return <p style={{ textAlign: "center", marginTop: "2rem" }}>Loading...</p>;
   }
 
   return (
     <div className="center-bg" style={{ alignItems: "flex-start" }}>
       <div className="dashboard-card" style={{ width: "100%", maxWidth: 600 }}>
-        <div className="profile-row">
+
+        <div className="profile-row" style={{ justifyContent: "space-between" }}>
           <div className="profile-avatar">
-            <span role="img" aria-label="society" className="profile-icon">🏫</span>
+            <span className="profile-icon">🏫</span>
           </div>
+
           <div>
             <h1 className="dashboard-title">Society Admin Dashboard</h1>
-            <p className="dashboard-email">{email}</p>
+            <p className="dashboard-email">{user.email}</p>
           </div>
+
+          <button
+            className="dashboard-btn"
+            style={{ background: "#ef4444" }}
+            onClick={handleLogout}
+          >
+            🚪 Logout
+          </button>
         </div>
 
-        {/* Add Event */}
         <h2 className="events-title">Create New Event</h2>
-        <form onSubmit={handleAddEvent} style={{ width: "100%" }}>
+        <form onSubmit={handleAddEvent}>
           <input
             type="text"
             placeholder="Event Title"
+            className="dashboard-input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="dashboard-input"
-            required
           />
           <input
             type="date"
+            className="dashboard-input"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="dashboard-input"
-            required
           />
           <textarea
-            placeholder="Event Description (Tags will be predicted)"
+            placeholder="Event Description"
+            className="dashboard-input"
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
-            className="dashboard-input"
-            required
-          />
-          <button type="submit" className="dashboard-btn">
+          ></textarea>
+
+          <button className="dashboard-btn" type="submit">
             ➕ Add Event
           </button>
         </form>
 
-        {/* Event List */}
-        <h2 className="events-title">Your Posted Events</h2>
-        {events.length === 0 ? (
-          <p>No events yet.</p>
-        ) : (
-          <div className="event-list">
-            {events.map((event) => (
-              <div key={event.id} className="event-card">
-                <div className="event-title">{event.title}</div>
-                <div className="event-date">{event.date}</div>
-                <div className="event-desc">{event.desc}</div>
-                <div style={{ fontWeight: 500, color: "#2563eb" }}>
-                  Tags: <span style={{ color: "#1e293b" }}>{event.tags.join(", ")}</span>
-                </div>
+        <h2 className="events-title">Your Events</h2>
+        {events.map((event) => (
+          <div key={event.id} className="event-card">
+            <div className="event-title">{event.title}</div>
+            <div className="event-date">{event.date}</div>
+            <div className="event-desc">{event.desc}</div>
+            <div style={{ fontWeight: 500 }}>
+              Tags: {event.tags?.join(", ")}
+            </div>
 
-                <div className="event-actions">
-                  <button
-                    onClick={() => handleEdit(event)}
-                    className="dashboard-btn"
-                    style={{ marginRight: "8px" }}
-                  >
-                    ✏️ Edit
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(event.id)}
-                    className="dashboard-btn"
-                    style={{ background: "#ef4444" }}
-                  >
-                    🗑 Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+            <button
+              className="dashboard-btn"
+              style={{ background: "#ef4444" }}
+              onClick={() => handleDelete(event.id)}
+            >
+              🗑 Delete
+            </button>
           </div>
-        )}
+        ))}
 
-        {/* Announcements */}
         <h2 className="events-title">Post Announcement</h2>
-        <form onSubmit={handleAddAnnouncement} style={{ width: "100%" }}>
+        <form onSubmit={handleAddAnnouncement}>
           <textarea
-            placeholder="Type announcement..."
+            className="dashboard-input"
+            placeholder="New announcement"
             value={announcementText}
             onChange={(e) => setAnnouncementText(e.target.value)}
-            className="dashboard-input"
-            required
-          />
-          <button type="submit" className="dashboard-btn">📢 Post</button>
+          ></textarea>
+
+          <button className="dashboard-btn">📢 Post</button>
         </form>
 
         {announcements.length > 0 && (
-          <div style={{ marginTop: "1rem", width: "100%" }}>
-            <h3 style={{ color: "#2563eb", marginBottom: "0.5rem" }}>Announcements</h3>
+          <div>
+            <h3 style={{ marginTop: "1rem" }}>Announcements</h3>
             {announcements.map((a) => (
               <div key={a.id} className="announcement-box">
                 {a.text}
