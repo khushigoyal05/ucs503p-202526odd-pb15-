@@ -1,5 +1,4 @@
-// frontend/StudentApp.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 export default function StudentApp() {
@@ -10,23 +9,21 @@ export default function StudentApp() {
   // Student interests
   const [interests, setInterests] = useState([]);
 
-  // Events are now fetched from the backend.
-  const [events, setEvents] = useState([]); 
+  // Events fetched from backend
+  const [events, setEvents] = useState([]);
 
-  // All available tags (fetched or hardcoded, matching backend)
+  // Tag list
   const TAGS = [
     "AI/ML", "art", "coding", "cultural", "cybersecurity", "dance", "design", "drama",
     "electronics", "entrepreneurship", "finance", "gaming", "literature", "marketing",
     "music", "photography", "robotics", "social service", "sports", "tech", "theatre"
   ];
 
-  // Function to fetch events from the backend
+  // Fetch events from backend
   const fetchEvents = async () => {
     setIsLoading(true);
     try {
-      const API_BASE = import.meta.env.VITE_API_BASE_URL;
-      const response = await fetch(`${API_BASE}/get_events`);
-
+      const response = await fetch("https://societyconnect.onrender.com/get_events");
       const data = await response.json();
       setEvents(data.events || []);
     } catch (err) {
@@ -35,20 +32,26 @@ export default function StudentApp() {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
-  // Mock login - now fetches events
+  // Fetch on login/load
+  useEffect(() => {
+    if (loggedIn) {
+      fetchEvents();
+    }
+  }, [loggedIn]);
+
+  // Login handler
   const handleLogin = async (e) => {
     e.preventDefault();
     if (email) {
       setLoggedIn(true);
-      await fetchEvents(); // Fetch events immediately after login
     } else {
       alert("Please enter your college email!");
     }
   };
 
-  // Handle interest selection
+  // Toggle interest
   const toggleInterest = (tag) => {
     if (interests.includes(tag)) {
       setInterests(interests.filter((i) => i !== tag));
@@ -57,7 +60,7 @@ export default function StudentApp() {
     }
   };
 
-  // Filter events based on selected interests
+  // Filter events based on interests
   const filteredEvents = events.filter((event) =>
     event.tags.some((tag) => interests.includes(tag))
   );
@@ -81,7 +84,6 @@ export default function StudentApp() {
     );
   }
 
-  // After login, show interests selection + filtered events
   return (
     <div className="center-bg">
       <div className="dashboard-card">
@@ -95,7 +97,7 @@ export default function StudentApp() {
           </div>
         </div>
 
-        {/* Interest Selection */}
+        {/* Interests */}
         <h2 className="events-title">Select Your Interests</h2>
         <div className="tags-grid">
           {TAGS.map((tag) => (
@@ -109,14 +111,24 @@ export default function StudentApp() {
           ))}
         </div>
 
-        {/* Events */}
+        {/* Refresh Events */}
+        <button
+          className="dashboard-btn"
+          onClick={fetchEvents}
+          style={{ marginTop: "1rem", marginBottom: "1rem" }}
+        >
+          🔄 Refresh Events
+        </button>
+
+        {/* Recommended Events */}
         <h2 className="events-title">Recommended Events</h2>
+
         {isLoading ? (
-            <p>Loading events...</p>
+          <p>Loading events...</p>
         ) : interests.length === 0 ? (
           <p>Please select at least one interest to see recommended events.</p>
         ) : filteredEvents.length === 0 ? (
-          <p>No events currently match your selected interests. Try selecting more interests!</p>
+          <p>No events match your selected interests right now.</p>
         ) : (
           <div className="events-list">
             {filteredEvents.map((event) => {
@@ -130,14 +142,12 @@ export default function StudentApp() {
                       <p className="event-date">{event.date}</p>
                       <p className="event-desc">{event.desc}</p>
                       <p><b>All Tags:</b> {event.tags?.join(", ") || "N/A"}</p>
-                      <p style={{color: "#2563eb", fontWeight: 600}}>
+                      <p style={{ color: "#2563eb", fontWeight: 600 }}>
                         Matched Interests: {matched.join(", ")}
                       </p>
                     </div>
                   </div>
-                  <button className="reminder-btn">
-                    🔔 Set Reminder
-                  </button>
+                  <button className="reminder-btn">🔔 Set Reminder</button>
                 </div>
               );
             })}

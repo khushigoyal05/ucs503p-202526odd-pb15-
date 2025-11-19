@@ -1,29 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const API_BASE = "https://societyconnect.onrender.com";
 
 export default function SocietyApp() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
-  
-  const [events, setEvents] = useState([]); 
+
+  const [events, setEvents] = useState([]);
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [desc, setDesc] = useState("");
+
   const [announcements, setAnnouncements] = useState([]);
   const [announcementText, setAnnouncementText] = useState("");
 
+  // Fetch events from backend
+  const fetchEvents = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/get_events`);
+      const data = await response.json();
+      setEvents(data.events || []);
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    }
+  };
+
+  // Run fetch after login
+  useEffect(() => {
+    if (loggedIn) {
+      fetchEvents();
+    }
+  }, [loggedIn]);
+
+  // Login handler
   const handleLogin = (e) => {
     e.preventDefault();
     if (email) {
       setLoggedIn(true);
-      // NOTE: In a complete app, you'd fetch the society's existing events here.
     } else {
       alert("Enter society email!");
     }
   };
 
+  // Add new event
   const handleAddEvent = async (e) => {
     e.preventDefault();
     if (!title || !date || !desc) {
@@ -39,26 +59,57 @@ export default function SocietyApp() {
       });
 
       if (!response.ok) {
-        // Attempt to parse a server error message if present
-        const errorData = await response.json().catch(() => ({ message: "Unknown server error or network issue." }));
+        const errorData = await response.json().catch(() => ({
+          message: "Unknown server error",
+        }));
         throw new Error(`Failed to add event: ${errorData.message}`);
       }
 
       const newEvent = await response.json();
 
-      console.log("New Event Added:", newEvent);
-      alert("Event Added! Predicted Tags: " + (newEvent.tags?.join(", ") || "None predicted. Check backend console."));
+      alert("Event Added! Predicted Tags: " + newEvent.tags.join(", "));
 
+      // Add into state
       setEvents([...events, newEvent]);
+
+      // Reset form
       setTitle("");
       setDate("");
       setDesc("");
     } catch (err) {
       console.error("Error adding event:", err.message);
-      alert(`Could not add event. Please check FastAPI console and Gemini API key. Error: ${err.message}`);
+      alert("Could not add event. Check backend logs.\n" + err.message);
     }
   };
 
+  // Delete event
+  const handleDelete = async (eventId) => {
+    try {
+      const response = await fetch(`${API_BASE}/delete_event/${eventId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        alert("Failed to delete from server.");
+        return;
+      }
+
+      // Remove from frontend state
+      setEvents(events.filter((ev) => ev.id !== eventId));
+
+      alert("Event deleted!");
+
+    } catch (err) {
+      console.error("Error deleting event:", err);
+    }
+  };
+
+  // Edit event (not fully implemented)
+  const handleEdit = (event) => {
+    alert(`Edit feature coming soon.\nEditing event: ${event.title}`);
+  };
+
+  // Add announcement (local only)
   const handleAddAnnouncement = (e) => {
     e.preventDefault();
     if (!announcementText) {
@@ -70,27 +121,6 @@ export default function SocietyApp() {
       { id: Date.now(), text: announcementText },
     ]);
     setAnnouncementText("");
-  };
-
-  // 🗑️ Delete Event Handler
-  const handleDelete = async (id) => {
-    try {
-      const response = await fetch(`${API_BASE}/delete_event/${id}`, { method: "DELETE" });
-      if (response.ok) {
-        setEvents(events.filter(ev => ev.id !== id));
-        alert("Event deleted!");
-      } else {
-        alert("Failed to delete event on server.");
-      }
-    } catch (err) {
-      console.error("Error deleting event:", err);
-    }
-  };
-  
-  // ✏️ Edit Event Handler (Simplified: just shows an alert)
-  const handleEdit = (event) => {
-    alert(`Editing event: ${event.title}. Not fully implemented for state management in this demo.`);
-    // A full implementation would load the event data into the form fields.
   };
 
   if (!loggedIn) {
@@ -144,7 +174,7 @@ export default function SocietyApp() {
             required
           />
           <textarea
-            placeholder="Event Description (Tags will be predicted from this)"
+            placeholder="Event Description (Tags will be predicted)"
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
             className="dashboard-input"
@@ -155,10 +185,10 @@ export default function SocietyApp() {
           </button>
         </form>
 
-        {/* Display Events */}
+        {/* Event List */}
         <h2 className="events-title">Your Posted Events</h2>
         {events.length === 0 ? (
-          <p>No events yet. Add an event above to see it here.</p>
+          <p>No events yet.</p>
         ) : (
           <div className="event-list">
             {events.map((event) => (
@@ -167,12 +197,9 @@ export default function SocietyApp() {
                 <div className="event-date">{event.date}</div>
                 <div className="event-desc">{event.desc}</div>
                 <div style={{ fontWeight: 500, color: "#2563eb" }}>
-                  Predicted Tags:{" "}
-                  <span style={{ color: "#1e293b" }}>
-                    {event.tags?.join(", ") || "No Tags Predicted"}
-                  </span>
+                  Tags: <span style={{ color: "#1e293b" }}>{event.tags.join(", ")}</span>
                 </div>
-                {/* Action buttons */}
+
                 <div className="event-actions">
                   <button
                     onClick={() => handleEdit(event)}
@@ -181,6 +208,7 @@ export default function SocietyApp() {
                   >
                     ✏️ Edit
                   </button>
+
                   <button
                     onClick={() => handleDelete(event.id)}
                     className="dashboard-btn"
@@ -204,14 +232,13 @@ export default function SocietyApp() {
             className="dashboard-input"
             required
           />
-          <button type="submit" className="dashboard-btn">
-            📢 Post
-          </button>
+          <button type="submit" className="dashboard-btn">📢 Post</button>
         </form>
+
         {announcements.length > 0 && (
           <div style={{ marginTop: "1rem", width: "100%" }}>
             <h3 style={{ color: "#2563eb", marginBottom: "0.5rem" }}>Announcements</h3>
-            {announcements.map(a => (
+            {announcements.map((a) => (
               <div key={a.id} className="announcement-box">
                 {a.text}
               </div>
