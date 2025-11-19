@@ -62,11 +62,6 @@ export default function StudentApp() {
   return (
     <div className="center-bg">
 
-      {/* LOGOUT BUTTON IN TOP-RIGHT */}
-      <button className="logout-btn" onClick={handleLogout}>
-        🚪 Logout
-      </button>
-
       <div className="dashboard-card">
         <button className="logout-btn" onClick={handleLogout}>
   🚪 Logout

@@ -106,11 +106,6 @@ export default function SocietyApp() {
   return (
     <div className="center-bg" style={{ alignItems: "flex-start" }}>
 
-      {/* TOP-RIGHT LOGOUT BUTTON */}
-      <button className="logout-btn" onClick={handleLogout}>
-        🚪 Logout
-      </button>
-
       <div className="dashboard-card" style={{ width: "100%", maxWidth: 600 }}>
         <button className="logout-btn" onClick={handleLogout}>
   🚪 Logout
