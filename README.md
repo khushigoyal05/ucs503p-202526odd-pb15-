@@ -192,16 +192,6 @@ Students only see events that match their chosen interests.
 
 ---
 
-# 📸 **Screenshots**
-
-(Add your screenshots here)
-
-```
-![Login Page](screenshots/login.png)
-![Student Dashboard](screenshots/student.png)
-![Society Dashboard](screenshots/society.png)
-```
-
 ---
 
 # 🏁 **Future Enhancements**
